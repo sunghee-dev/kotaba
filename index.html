@@ -93,6 +93,14 @@
   .conj-label{font-size:11px;color:var(--sumi-soft);min-width:118px;flex-shrink:0;font-weight:600}
   .conj-form{flex:1;font-family:var(--jp-serif);font-size:19px;line-height:1.45;word-break:break-all}
   .rel-mn{font-family:var(--ko);font-size:12px;color:var(--sumi-soft);margin-left:8px}
+  .usage{text-align:left;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+  .usage:last-child{border-bottom:none}
+  .usage-conn{font-family:var(--jp-sans);font-size:15px;color:var(--sumi);font-weight:500;display:flex;align-items:center;gap:7px;flex-wrap:wrap;line-height:1.5}
+  .conn-tag{font-family:var(--ko);font-size:10px;font-weight:700;color:#fff;background:var(--plum);padding:2px 8px;border-radius:20px;flex-shrink:0}
+  .usage-mn{font-family:var(--ko);font-size:13px;color:var(--sumi-soft);margin:3px 0 6px;font-weight:600}
+  .example .ex-say{margin:0 0 0 6px;vertical-align:middle}
+  .notes{text-align:left;background:rgba(193,138,40,.1);border-radius:12px;padding:10px 13px;margin-top:12px;font-size:13px;line-height:1.6;color:var(--sumi)}
+  .notes-tag{font-size:10px;font-weight:700;color:#fff;background:var(--ochre);padding:2px 8px;border-radius:20px;margin-right:7px}
   .conj-row .listen{flex-shrink:0}
 
   .rate{display:flex;gap:9px;margin-top:16px}
@@ -434,6 +442,17 @@ function relatedHTML(c){
   return `<div class="conj"><div class="conj-h">관련 단어</div>`+
     c.related.map(x=>`<div class="conj-row"><span class="conj-label">${esc(x.rel||"관련어")}</span><span class="conj-form">${ruby(x.jp,x.reading)}<span class="rel-mn">${esc(x.meaning||"")}</span></span><button class="listen mini" data-say="${esc(x.reading||x.jp)}">🔊</button></div>`).join("")+`</div>`;
 }
+function exLine(e,say){ return `<div class="example">${esc(e.jp)}${say?`<button class="listen mini ex-say" data-say="${esc(e.jp)}">🔊</button>`:""}${e.ko?`<span class="ko">${esc(e.ko)}</span>`:""}</div>`; }
+function grammarHTML(c){
+  if(!Array.isArray(c.usages)||!c.usages.length) return "";
+  return `<div class="conj"><div class="conj-h">용법 · 접속</div>`+
+    c.usages.map(u=>`<div class="usage">
+      ${u.connection?`<div class="usage-conn"><span class="conn-tag">접속</span>${esc(u.connection)}</div>`:""}
+      ${u.meaning?`<div class="usage-mn">${esc(u.meaning)}</div>`:""}
+      ${(Array.isArray(u.examples)?u.examples:[]).map(e=>exLine(e,true)).join("")}
+    </div>`).join("")+`</div>`;
+}
+function notesHTML(c){ return c.notes?`<div class="notes"><span class="notes-tag">메모</span>${esc(c.notes)}</div>`:""; }
 function frontHTML(c){
   const cat=CATS[c.category];
   return `<span class="cat-badge" style="background:${cat.c}1a;color:${cat.c}">${cat.ko}</span>
@@ -450,14 +469,18 @@ function backHTML(c){
     conjBlock=`<div class="conj"><div class="conj-h">활용형 모아보기</div>`+
       list.map(x=>`<div class="conj-row"><span class="conj-label">${esc(x.label)}</span><span class="conj-form">${ruby(x.kanji,x.reading)}</span><button class="listen mini" data-say="${esc(x.reading)}">🔊</button></div>`).join("")+`</div>`;
   }
-  const pos=c.category==="verb"?`${cat.ko} · ${vTypeLabel(c.vType)}`:c.category==="adj"?`${cat.ko} · ${c.aType==="i"?"い형용사":"な형용사"}`:cat.ko;
+  const isGrammar=Array.isArray(c.usages)&&c.usages.length;
+  let pos=c.category==="verb"?`${cat.ko} · ${vTypeLabel(c.vType)}`:c.category==="adj"?`${cat.ko} · ${c.aType==="i"?"い형용사":"な형용사"}`:isGrammar?`${cat.ko} · 문형`:cat.ko;
+  if(c.level) pos+=` · ${esc(c.level)}`;
   return `<span class="cat-badge" style="background:${cat.c}1a;color:${cat.c}">${cat.ko}</span>
     ${c.tag?`<span class="tag-badge">${esc(c.tag)}</span>`:""}
     <div class="back-word">${ruby(c.jp,c.reading)}</div>
     <div class="back-meaning">${esc(c.meaning)}</div>
     <div class="back-pos">${pos}</div>
     <button class="listen" data-say="${esc(c.reading||c.jp)}">🔊 발음</button>
-    ${examplesHTML(c)}
+    ${isGrammar?"":examplesHTML(c)}
+    ${grammarHTML(c)}
+    ${notesHTML(c)}
     ${conjBlock}
     ${relatedHTML(c)}`;
 }
@@ -620,6 +643,9 @@ function importPaste(){
     if(Array.isArray(o.examples)) card.examples=o.examples.filter(e=>e&&e.jp).map(e=>({jp:String(e.jp).trim(),ko:(e.ko||"").trim()}));
     else if(o.example) card.example=String(o.example);
     if(Array.isArray(o.related)) card.related=o.related.filter(r=>r&&r.jp).map(r=>({jp:String(r.jp).trim(),reading:(r.reading||"").trim(),meaning:(r.meaning||"").trim(),rel:(r.rel||"관련어").trim()}));
+    if(Array.isArray(o.usages)) card.usages=o.usages.filter(u=>u&&(u.connection||u.meaning||u.examples)).map(u=>({connection:(u.connection||"").trim(),meaning:(u.meaning||"").trim(),examples:Array.isArray(u.examples)?u.examples.filter(e=>e&&e.jp).map(e=>({jp:String(e.jp).trim(),ko:(e.ko||"").trim()})):[]}));
+    if(o.notes) card.notes=String(o.notes).trim();
+    if(o.level) card.level=String(o.level).trim();
     deck.cards.push(card); added++;
   });
   saveDeck(); closePaste(); renderStats(); renderChips();
@@ -641,6 +667,9 @@ function seedSamples(){
   add({category:"noun",jp:"友達",reading:"ともだち",meaning:"친구",
     related:[{jp:"親友",reading:"しんゆう",meaning:"절친",rel:"유사어"},{jp:"知り合い",reading:"しりあい",meaning:"아는 사이",rel:"유사어"},{jp:"仲間",reading:"なかま",meaning:"동료, 한패",rel:"관련어"}],tag:"N5"});
   add({category:"phrase",jp:"いただきます",reading:"いただきます",meaning:"잘 먹겠습니다",tag:"인사"});
+  add({category:"phrase",jp:"ておく",reading:"ておく",meaning:"(미리) ~해 두다 / ~해 놓다",level:"N4",tag:"문형",
+    usages:[{connection:"동사 て형 + おく",meaning:"미리 대비해서 ~해 두다, ~한 상태로 두다",examples:[{jp:"ビールを買っておきます。",ko:"맥주를 사 둘게요."},{jp:"窓を開けておく。",ko:"창문을 열어 둔다."}]}],
+    notes:"회화에서는 ～ておく→～とく, ～でおく→～どく로 줄여 말함 (買っとく)."});
   deck.meta.seeded=true; saveDeck(); buildSession(); renderStudy(); renderStats(); renderChips();
   toast("샘플을 채웠어요");
 }
