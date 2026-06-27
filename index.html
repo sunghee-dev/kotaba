@@ -18,7 +18,7 @@
   :root{
     --paper:#FAF7F1; --card:#FFFDF9; --sumi:#211C16; --sumi-soft:#6B6155;
     --shu:#D9483A; --shu-deep:#B5392C; --ai:#2C3E6B; --ai-soft:#43578C;
-    --ochre:#C18A28; --plum:#6B4E71;
+    --ochre:#C18A28; --plum:#6B4E71; --matcha:#5C7A4A;
     --line:#E6DECF; --line-soft:#F1EADD;
     --shadow:0 1px 2px rgba(33,28,22,.05),0 10px 30px rgba(33,28,22,.07);
     --jp-serif:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",serif;
@@ -50,6 +50,7 @@
   .hidden{display:none !important}
 
   ruby rt{font-family:var(--jp-sans);font-weight:500;font-size:.42em;color:var(--shu-deep);letter-spacing:0}
+  .example rt,.usage-conn rt,.notes rt{font-size:.58em}
 
   .chips{display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap}
   .chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--sumi-soft);cursor:pointer;font-family:var(--ko);transition:.15s;display:inline-flex;align-items:center;gap:6px}
@@ -60,6 +61,13 @@
   .chip.active[data-cat="adj"]{background:var(--ai)}
   .chip.active[data-cat="noun"]{background:var(--ochre)}
   .chip.active[data-cat="phrase"]{background:var(--plum)}
+  .chips2{margin-top:-9px}
+  .chip.active[data-st="all"]{background:var(--sumi)}
+  .chip.active[data-st="new"]{background:var(--shu)}
+  .chip.active[data-st="review"]{background:var(--ochre)}
+  .chip.active[data-st="learned"]{background:var(--matcha)}
+  .chip .ct{font-weight:700;opacity:.55;margin-left:1px}
+  .chip.active .ct{opacity:.85}
   .chip:focus-visible{outline:2px solid var(--ai);outline-offset:1px}
 
   .stats{display:flex;gap:9px;margin-bottom:16px}
@@ -169,6 +177,33 @@
   .row-actions button:hover{background:var(--line-soft);color:var(--sumi)}
   .list-empty{text-align:center;color:var(--sumi-soft);padding:38px 0;font-size:14px}
 
+  /* status pill + clickable rows */
+  .word-row .main{cursor:pointer}
+  .st-pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;color:#fff;vertical-align:middle}
+  .st-pill[data-st="new"]{background:var(--shu)}
+  .st-pill[data-st="review"]{background:var(--ochre)}
+  .st-pill[data-st="learned"]{background:var(--matcha)}
+  .word-row .due-dot .sep{color:var(--line);margin:0 5px}
+
+  /* ===== card viewer (study) ===== */
+  .viewer-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .back-link{border:1px solid var(--line);background:var(--card);border-radius:18px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--sumi-soft);cursor:pointer;font-family:var(--ko)}
+  .back-link:hover{border-color:var(--ai-soft);color:var(--ai)}
+  .card-pos{font-size:13px;color:var(--sumi-soft);font-weight:600;font-variant-numeric:tabular-nums}
+  .card-pos b{color:var(--sumi)}
+  .status-pick{margin-top:18px}
+  .status-pick .sp-h{font-size:11px;font-weight:700;color:var(--sumi-soft);margin-bottom:7px;letter-spacing:.03em}
+  .status-pick .sp-row{display:flex;gap:8px}
+  .status-pick button{flex:1;border:1.5px solid var(--line);background:var(--card);border-radius:13px;padding:13px 0;font-family:var(--ko);font-weight:700;font-size:14px;color:var(--sumi-soft);cursor:pointer;transition:.15s}
+  .status-pick button:hover{border-color:var(--ai-soft)}
+  .status-pick button.on[data-s="new"]{background:var(--shu);border-color:var(--shu);color:#fff}
+  .status-pick button.on[data-s="review"]{background:var(--ochre);border-color:var(--ochre);color:#fff}
+  .status-pick button.on[data-s="learned"]{background:var(--matcha);border-color:var(--matcha);color:#fff}
+  .viewer-nav{display:flex;gap:9px;margin-top:12px}
+  .viewer-nav button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:13px;padding:14px 0;font-family:var(--ko);font-weight:600;font-size:14px;color:var(--sumi);cursor:pointer;transition:.15s}
+  .viewer-nav button:hover:not(:disabled){border-color:var(--ai-soft);color:var(--ai)}
+  .viewer-nav button:disabled{opacity:.4;cursor:default}
+
   .overlay{position:fixed;inset:0;background:rgba(33,28,22,.45);display:flex;align-items:flex-end;justify-content:center;z-index:60}
   .overlay.hidden{display:none}
   .sheet{background:var(--card);width:100%;max-width:580px;border-radius:20px 20px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.22);max-height:88vh;overflow-y:auto}
@@ -204,23 +239,12 @@
   </header>
 
   <nav>
-    <button data-view="study" class="active">공부</button>
-    <button data-view="list">단어장</button>
+    <button data-view="list" class="active">단어장</button>
     <button data-view="add">추가</button>
   </nav>
 
   <main>
-    <section id="view-study">
-      <div class="chips" id="studyChips"></div>
-      <div class="stats">
-        <div class="stat due"><div class="n" id="st-due">0</div><div class="l">복습 대기</div></div>
-        <div class="stat"><div class="n" id="st-total">0</div><div class="l">전체 단어</div></div>
-        <div class="stat"><div class="n" id="st-learned">0</div><div class="l">익힌 단어</div></div>
-      </div>
-      <div id="study-area"></div>
-    </section>
-
-    <section id="view-list" class="hidden">
+    <section id="view-list">
       <div class="list-tools">
         <div class="search"><input id="search" type="text" placeholder="검색" aria-label="검색"></div>
         <button class="icon-btn accent" id="pasteOpen2">붙여넣기</button>
@@ -228,9 +252,30 @@
         <button class="icon-btn" id="importBtn">CSV</button>
         <input type="file" id="importFile" accept=".csv,text/csv" class="hidden">
       </div>
-      <div class="chips" id="listChips"></div>
+      <div class="chips" id="catChips"></div>
+      <div class="chips chips2" id="statusChips"></div>
       <div class="count-line" id="countLine"></div>
       <div id="list-area"></div>
+    </section>
+
+    <section id="view-card" class="hidden">
+      <div class="viewer-top">
+        <button class="back-link" id="cardBack">← 목록</button>
+        <div class="card-pos" id="cardPos"></div>
+      </div>
+      <div class="card-wrap"><div class="flashcard" id="viewerCard" role="button" tabindex="0" aria-label="카드 뒤집기"></div></div>
+      <div class="status-pick">
+        <div class="sp-h">이 단어 분류</div>
+        <div class="sp-row" id="statusPick">
+          <button data-s="new">새단어</button>
+          <button data-s="review">복습</button>
+          <button data-s="learned">익힌단어</button>
+        </div>
+      </div>
+      <div class="viewer-nav">
+        <button id="prevWord">← 이전단어</button>
+        <button id="nextWord">다음단어 →</button>
+      </div>
     </section>
 
     <section id="view-add" class="hidden">
@@ -292,8 +337,11 @@
 <script>
 const DAY=86400000, STORE_KEY="jp_deck_v3";
 const CATS={verb:{ko:"동사",jp:"動詞",c:"var(--shu)"},adj:{ko:"형용사",jp:"形容詞",c:"var(--ai)"},noun:{ko:"명사",jp:"名詞",c:"var(--ochre)"},phrase:{ko:"구문",jp:"表現",c:"var(--plum)"}};
-let deck={cards:[],meta:{}}, session={queue:[],current:null,flipped:false};
-let editingId=null, memFallback=null, studyFilter="all", listFilter="all";
+const STATUS={new:{ko:"새단어",c:"var(--shu)"},review:{ko:"복습",c:"var(--ochre)"},learned:{ko:"익힌단어",c:"var(--matcha)"}};
+const STATUS_ORDER=["new","review","learned"];
+let deck={cards:[],meta:{}};
+let editingId=null, memFallback=null, catFilter="all", statusFilter="all";
+let viewer={ids:[],index:0,flipped:false};
 let formCat="verb", formVType="godan", formAType="i";
 
 /* ===== conjugation engine ===== */
@@ -358,6 +406,15 @@ function ruby(kanji,reading){
   return `<ruby>${esc(kHead)}<rt>${esc(rHead)}</rt></ruby>${esc(tail)}`;
 }
 function esc(s){return (s||"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+/* inline furigana for free text: 漢字[よみ] -> <ruby>漢字<rt>よみ</rt></ruby>. text without brackets is unaffected */
+const FURI_BASE="[\\u4e00-\\u9faf\\u3400-\\u4dbf\\u3005々〆ヶ]+";
+function furiganaText(s){
+  s=s||""; const re=new RegExp("("+FURI_BASE+")\\[([^\\]]+)\\]","g");
+  let out="",last=0,m;
+  while((m=re.exec(s))){ out+=esc(s.slice(last,m.index)); out+=`<ruby>${esc(m[1])}<rt>${esc(m[2])}</rt></ruby>`; last=re.lastIndex; }
+  out+=esc(s.slice(last)); return out;
+}
+function stripRuby(s){ return (s||"").replace(new RegExp("("+FURI_BASE+")\\[([^\\]]+)\\]","g"),"$1"); }
 
 /* ===== storage (mobile/standalone first) ===== */
 async function saveDeck(){
@@ -377,7 +434,7 @@ const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random()
 const now=()=>Date.now();
 const isDue=c=>(c.due||0)<=now();
 const matchFilter=(c,f)=>f==="all"||c.category===f;
-function dueLabel(c){ if(isDue(c)) return "복습 가능"; const d=Math.ceil((c.due-now())/DAY); return d<=1?"내일 복습":d+"일 후 복습"; }
+const matchStatus=(c,f)=>f==="all"||(c.status||"new")===f;
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2000);}
 function prefersReduced(){return window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;}
 function speak(t){ if(!t||!("speechSynthesis"in window))return; const u=new SpeechSynthesisUtterance(t);u.lang="ja-JP";u.rate=.9; const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.toLowerCase().startsWith("ja")); if(v)u.voice=v; speechSynthesis.cancel();speechSynthesis.speak(u); }
@@ -387,72 +444,54 @@ function getExamples(c){
   return [];
 }
 
-/* ===== SRS ===== */
-function applyRating(c,rating){
-  c.ease=c.ease||2.5; c.reps=c.reps||0; c.interval=c.interval||0;
-  if(rating==="again"){ c.reps=0; c.ease=Math.max(1.3,c.ease-0.2); c.interval=0; c.due=now(); }
-  else if(rating==="good"){ if(c.reps===0)c.interval=1; else if(c.reps===1)c.interval=3; else c.interval=Math.round(c.interval*c.ease); c.reps++; c.due=now()+c.interval*DAY; }
-  else { if(c.reps===0)c.interval=4; else c.interval=Math.round(Math.max(c.interval,1)*c.ease*1.3); c.ease+=0.15; c.reps++; c.due=now()+c.interval*DAY; }
-  c.lastReviewed=now();
-}
-function buildSession(){
-  const due=deck.cards.filter(c=>isDue(c)&&matchFilter(c,studyFilter)).sort((a,b)=>(a.due||0)-(b.due||0));
-  session.queue=due; session.current=session.queue.shift()||null; session.flipped=false;
-}
-function answer(rating){
-  if(!session.current) return;
-  const c=session.current; applyRating(c,rating);
-  if(rating==="again") session.queue.push(c);
-  saveDeck();
-  session.current=session.queue.shift()||null; session.flipped=false;
-  renderStudy(); renderStats(); renderChips();
-}
-
 /* ===== chips ===== */
-function chipHTML(scope,active){
+function catCount(k){ return deck.cards.filter(c=>(k==="all"||c.category===k)&&matchStatus(c,statusFilter)).length; }
+function statusCount(k){ return deck.cards.filter(c=>matchFilter(c,catFilter)&&(k==="all"||(c.status||"new")===k)).length; }
+function catChipsHTML(){
   return ["all","verb","adj","noun","phrase"].map(k=>{
     const lbl=k==="all"?"전체":CATS[k].ko;
     const dot=k==="all"?"":`<span class="dot" style="background:${CATS[k].c}"></span>`;
-    return `<button class="chip ${active===k?'active':''}" data-scope="${scope}" data-cat="${k}">${dot}${lbl}</button>`;
+    return `<button class="chip ${catFilter===k?'active':''}" data-cat="${k}">${dot}${lbl}<span class="ct">${catCount(k)}</span></button>`;
+  }).join("");
+}
+function statusChipsHTML(){
+  return ["all","new","review","learned"].map(k=>{
+    const lbl=k==="all"?"전체":STATUS[k].ko;
+    const dot=k==="all"?"":`<span class="dot" style="background:${STATUS[k].c}"></span>`;
+    return `<button class="chip ${statusFilter===k?'active':''}" data-st="${k}">${dot}${lbl}<span class="ct">${statusCount(k)}</span></button>`;
   }).join("");
 }
 function renderChips(){
-  document.getElementById("studyChips").innerHTML=chipHTML("study",studyFilter);
-  document.getElementById("listChips").innerHTML=chipHTML("list",listFilter);
-  document.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
-    if(b.dataset.scope==="study"){ studyFilter=b.dataset.cat; buildSession(); renderStudy(); }
-    else { listFilter=b.dataset.cat; renderList(); }
-    renderChips();
-  });
+  document.getElementById("catChips").innerHTML=catChipsHTML();
+  document.getElementById("statusChips").innerHTML=statusChipsHTML();
+  document.querySelectorAll("#catChips .chip").forEach(b=>b.onclick=()=>{ catFilter=b.dataset.cat; renderChips(); renderList(); });
+  document.querySelectorAll("#statusChips .chip").forEach(b=>b.onclick=()=>{ statusFilter=b.dataset.st; renderChips(); renderList(); });
 }
 
-/* ===== stats ===== */
+/* ===== header ===== */
 function renderStats(){
-  document.getElementById("st-due").textContent=deck.cards.filter(isDue).length;
-  document.getElementById("st-total").textContent=deck.cards.length;
-  document.getElementById("st-learned").textContent=deck.cards.filter(c=>(c.reps||0)>=2).length;
-  const d=deck.cards.filter(isDue).length;
-  document.getElementById("streak").innerHTML=deck.cards.length?`<b>${d}</b> 대기`:"";
+  const t=deck.cards.length;
+  document.getElementById("streak").innerHTML=t?`<b>${t}</b> 단어`:"";
 }
 
 /* ===== card faces ===== */
-function examplesHTML(c){ return getExamples(c).map(e=>`<div class="example">${esc(e.jp)}${e.ko?`<span class="ko">${esc(e.ko)}</span>`:""}</div>`).join(""); }
+function examplesHTML(c){ return getExamples(c).map(e=>`<div class="example">${furiganaText(e.jp)}${e.ko?`<span class="ko">${esc(e.ko)}</span>`:""}</div>`).join(""); }
 function relatedHTML(c){
   if(!Array.isArray(c.related)||!c.related.length) return "";
   return `<div class="conj"><div class="conj-h">관련 단어</div>`+
     c.related.map(x=>`<div class="conj-row"><span class="conj-label">${esc(x.rel||"관련어")}</span><span class="conj-form">${ruby(x.jp,x.reading)}<span class="rel-mn">${esc(x.meaning||"")}</span></span><button class="listen mini" data-say="${esc(x.reading||x.jp)}">🔊</button></div>`).join("")+`</div>`;
 }
-function exLine(e,say){ return `<div class="example">${esc(e.jp)}${say?`<button class="listen mini ex-say" data-say="${esc(e.jp)}">🔊</button>`:""}${e.ko?`<span class="ko">${esc(e.ko)}</span>`:""}</div>`; }
+function exLine(e,say){ return `<div class="example">${furiganaText(e.jp)}${say?`<button class="listen mini ex-say" data-say="${esc(stripRuby(e.jp))}">🔊</button>`:""}${e.ko?`<span class="ko">${esc(e.ko)}</span>`:""}</div>`; }
 function grammarHTML(c){
   if(!Array.isArray(c.usages)||!c.usages.length) return "";
   return `<div class="conj"><div class="conj-h">용법 · 접속</div>`+
     c.usages.map(u=>`<div class="usage">
-      ${u.connection?`<div class="usage-conn"><span class="conn-tag">접속</span>${esc(u.connection)}</div>`:""}
+      ${u.connection?`<div class="usage-conn"><span class="conn-tag">접속</span>${furiganaText(u.connection)}</div>`:""}
       ${u.meaning?`<div class="usage-mn">${esc(u.meaning)}</div>`:""}
       ${(Array.isArray(u.examples)?u.examples:[]).map(e=>exLine(e,true)).join("")}
     </div>`).join("")+`</div>`;
 }
-function notesHTML(c){ return c.notes?`<div class="notes"><span class="notes-tag">메모</span>${esc(c.notes)}</div>`:""; }
+function notesHTML(c){ return c.notes?`<div class="notes"><span class="notes-tag">메모</span>${furiganaText(c.notes)}</div>`:""; }
 function frontHTML(c){
   const cat=CATS[c.category];
   return `<span class="cat-badge" style="background:${cat.c}1a;color:${cat.c}">${cat.ko}</span>
@@ -486,68 +525,84 @@ function backHTML(c){
 }
 function vTypeLabel(t){return {godan:"1류 동사 (五段)",ichidan:"2류 동사 (一段)",suru:"3류 する",kuru:"3류 来る"}[t]||"";}
 
-/* ===== study ===== */
-function renderStudy(){
-  const area=document.getElementById("study-area");
-  const pool=deck.cards.filter(c=>matchFilter(c,studyFilter));
-  if(deck.cards.length===0){
-    area.innerHTML=`<div class="empty"><div class="mark">始</div><h2>아직 단어가 없어요</h2><p>샘플로 둘러보거나, 클로드 결과를 붙여넣어 보세요.</p><div class="row"><button class="btn ai" id="seedBtn">샘플 채우기</button><button class="btn" id="goAdd">단어 추가</button></div></div>`;
-    document.getElementById("seedBtn").onclick=seedSamples;
-    document.getElementById("goAdd").onclick=()=>switchView("add"); return;
-  }
-  if(!session.current){
-    const msg=pool.length?"지금 복습할 단어가 없어요. 다음 복습 때 만나요.":"이 분류에는 단어가 없어요.";
-    area.innerHTML=`<div class="empty"><div class="mark">休</div><h2>복습 끝!</h2><p>${msg}</p><div class="row"><button class="btn" id="goAdd2">단어 추가</button><button class="btn ai" id="goList">단어장 보기</button></div></div>`;
-    document.getElementById("goAdd2").onclick=()=>switchView("add");
-    document.getElementById("goList").onclick=()=>switchView("list"); return;
-  }
-  area.innerHTML=`<div class="card-wrap"><div class="flashcard" id="flashcard" role="button" tabindex="0" aria-label="카드 뒤집기"></div></div>
-    <div class="rate" id="rate" style="${session.flipped?'':'visibility:hidden'}">
-      <button class="again">다시<small>처음부터</small></button><button class="good">좋음<small>잘 외웠어요</small></button><button class="easy">쉬움<small>완벽해요</small></button></div>`;
-  fillCard();
-  const card=document.getElementById("flashcard");
-  card.onclick=e=>{ if(e.target.closest(".listen"))return; flipCard(); };
-  card.onkeydown=e=>{ if(e.key===" "||e.key==="Enter"){e.preventDefault();flipCard();} };
-  const rate=document.getElementById("rate");
-  rate.querySelector(".again").onclick=()=>answer("again");
-  rate.querySelector(".good").onclick=()=>answer("good");
-  rate.querySelector(".easy").onclick=()=>answer("easy");
+/* ===== card viewer (study) ===== */
+function getFilteredCards(){
+  const q=(document.getElementById("search").value||"").trim().toLowerCase();
+  let cards=deck.cards.filter(c=>matchFilter(c,catFilter)&&matchStatus(c,statusFilter)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(q) cards=cards.filter(c=>[c.jp,c.reading,c.meaning,c.tag].some(v=>(v||"").toLowerCase().includes(q)));
+  return cards;
 }
-function fillCard(){
-  const card=document.getElementById("flashcard"); if(!card)return;
-  card.innerHTML=session.flipped?backHTML(session.current):frontHTML(session.current);
+function openViewer(id){
+  const cards=getFilteredCards();
+  const idx=cards.findIndex(c=>c.id===id);
+  if(idx<0) return;
+  viewer.ids=cards.map(c=>c.id); viewer.index=idx; viewer.flipped=false;
+  switchView("card");
+}
+function currentViewerCard(){ const id=viewer.ids[viewer.index]; return deck.cards.find(c=>c.id===id)||null; }
+function fillViewer(){
+  const card=document.getElementById("viewerCard"); const c=currentViewerCard(); if(!card||!c)return;
+  card.innerHTML=viewer.flipped?backHTML(c):frontHTML(c);
   card.querySelectorAll(".listen").forEach(b=>b.onclick=e=>{e.stopPropagation();speak(b.dataset.say);});
 }
-function flipCard(){
-  const card=document.getElementById("flashcard"); if(!card)return;
-  const rate=document.getElementById("rate");
-  if(prefersReduced()){ session.flipped=!session.flipped; fillCard(); if(rate)rate.style.visibility=session.flipped?"visible":"hidden"; return; }
+function renderViewer(){
+  const c=currentViewerCard();
+  if(!c){ switchView("list"); return; }
+  document.getElementById("cardPos").innerHTML=`<b>${viewer.index+1}</b> / ${viewer.ids.length}`;
+  fillViewer();
+  const card=document.getElementById("viewerCard");
+  card.onclick=e=>{ if(e.target.closest(".listen"))return; flipViewer(); };
+  card.onkeydown=e=>{ if(e.key===" "||e.key==="Enter"){e.preventDefault();flipViewer();} };
+  document.querySelectorAll("#statusPick button").forEach(b=>b.classList.toggle("on",(c.status||"new")===b.dataset.s));
+  document.getElementById("prevWord").disabled=viewer.index<=0;
+  document.getElementById("nextWord").disabled=viewer.index>=viewer.ids.length-1;
+}
+function flipViewer(){
+  const card=document.getElementById("viewerCard"); if(!card)return;
+  if(prefersReduced()){ viewer.flipped=!viewer.flipped; fillViewer(); return; }
   card.classList.add("flipping");
-  setTimeout(()=>{ session.flipped=!session.flipped; fillCard(); card.classList.remove("flipping"); if(rate)rate.style.visibility=session.flipped?"visible":"hidden"; },160);
+  setTimeout(()=>{ viewer.flipped=!viewer.flipped; fillViewer(); card.classList.remove("flipping"); },160);
+}
+function viewerGo(d){
+  const ni=viewer.index+d;
+  if(ni<0||ni>=viewer.ids.length) return;
+  viewer.index=ni; viewer.flipped=false; renderViewer();
+}
+function setViewerStatus(s){
+  const c=currentViewerCard(); if(!c)return;
+  c.status=s; saveDeck();
+  document.querySelectorAll("#statusPick button").forEach(b=>b.classList.toggle("on",b.dataset.s===s));
+  toast(STATUS[s].ko+" 분류");
 }
 
 /* ===== list ===== */
 function renderList(){
   const area=document.getElementById("list-area");
-  const q=(document.getElementById("search").value||"").trim().toLowerCase();
-  let cards=deck.cards.filter(c=>matchFilter(c,listFilter)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  if(q) cards=cards.filter(c=>[c.jp,c.reading,c.meaning,c.tag].some(v=>(v||"").toLowerCase().includes(q)));
-  document.getElementById("countLine").textContent=deck.cards.length?`${listFilter==="all"?"전체":CATS[listFilter].ko} ${cards.length}개`:"";
-  if(deck.cards.length===0){ area.innerHTML=`<div class="list-empty">아직 단어가 없어요.</div>`; return; }
+  const cards=getFilteredCards();
+  const catL=catFilter==="all"?"전체":CATS[catFilter].ko;
+  const stL=statusFilter==="all"?"":" · "+STATUS[statusFilter].ko;
+  document.getElementById("countLine").textContent=deck.cards.length?`${catL}${stL} ${cards.length}개`:"";
+  if(deck.cards.length===0){
+    area.innerHTML=`<div class="empty"><div class="mark">始</div><h2>아직 단어가 없어요</h2><p>샘플로 둘러보거나, 추가 탭에서 클로드 결과를 붙여넣어 보세요.</p><div class="row"><button class="btn ai" id="seedBtn">샘플 채우기</button><button class="btn" id="goAdd">단어 추가</button></div></div>`;
+    document.getElementById("seedBtn").onclick=seedSamples;
+    document.getElementById("goAdd").onclick=()=>switchView("add");
+    return;
+  }
   if(cards.length===0){ area.innerHTML=`<div class="list-empty">해당하는 단어가 없어요.</div>`; return; }
   area.innerHTML=cards.map(c=>{
-    const cat=CATS[c.category];
+    const cat=CATS[c.category]; const st=c.status||"new";
     return `<div class="word-row" style="border-left-color:${cat.c}">
-      <div class="main">
+      <div class="main" data-open="${c.id}">
         <div class="jp">${ruby(c.jp,c.reading)}</div>
         <div class="mn">${esc(c.meaning)}${c.tag?` · ${esc(c.tag)}`:""}</div>
-        <div class="due-dot ${isDue(c)?'now':''}">${cat.ko} · ${dueLabel(c)}</div>
+        <div class="due-dot">${cat.ko}<span class="sep">·</span><span class="st-pill" data-st="${st}">${STATUS[st].ko}</span></div>
       </div>
       <div class="row-actions">
         <button data-say="${esc(c.reading||c.jp)}" title="발음">🔊</button>
         <button data-edit="${c.id}">수정</button><button data-del="${c.id}">삭제</button>
       </div></div>`;
   }).join("");
+  area.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openViewer(b.dataset.open));
   area.querySelectorAll("[data-say]").forEach(b=>b.onclick=()=>speak(b.dataset.say));
   area.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>startEdit(b.dataset.edit));
   area.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>delCard(b.dataset.del));
@@ -585,7 +640,7 @@ function saveWord(){
     const c=deck.cards.find(x=>x.id===editingId); if(c) Object.assign(c,v);
     editingId=null; resetFormChrome(); saveDeck(); clearForm(); toast("수정했어요"); switchView("list");
   } else {
-    deck.cards.push({id:uid(),...v,ease:2.5,reps:0,interval:0,due:now(),createdAt:now()});
+    deck.cards.push({id:uid(),...v,status:"new",ease:2.5,reps:0,interval:0,due:now(),createdAt:now()});
     saveDeck(); clearForm(); document.getElementById("f-jp").focus(); toast("단어를 추가했어요");
   }
   renderStats();
@@ -617,8 +672,7 @@ function delCard(id){
   const c=deck.cards.find(x=>x.id===id); if(!c)return;
   if(!confirm(`‘${c.jp}’ 단어를 삭제할까요?`))return;
   deck.cards=deck.cards.filter(x=>x.id!==id);
-  if(session.current&&session.current.id===id){ session.current=session.queue.shift()||null; }
-  session.queue=session.queue.filter(x=>x.id!==id);
+  viewer.ids=viewer.ids.filter(x=>x!==id);
   saveDeck(); renderList(); renderStats(); renderChips(); toast("삭제했어요");
 }
 
@@ -637,7 +691,7 @@ function importPaste(){
     if(!o||!o.jp||!o.meaning){skipped++;return;}
     const cat=normCat(o.category);
     if(deck.cards.some(c=>c.jp===String(o.jp).trim()&&c.category===cat)){skipped++;return;}
-    const card={id:uid(),category:cat,jp:String(o.jp).trim(),reading:(o.reading||"").trim(),meaning:String(o.meaning).trim(),tag:(o.tag||"").trim(),ease:2.5,reps:0,interval:0,due:tnow,createdAt:tnow+added};
+    const card={id:uid(),category:cat,jp:String(o.jp).trim(),reading:(o.reading||"").trim(),meaning:String(o.meaning).trim(),tag:(o.tag||"").trim(),status:"new",ease:2.5,reps:0,interval:0,due:tnow,createdAt:tnow+added};
     if(cat==="verb") card.vType=["godan","ichidan","suru","kuru"].includes(o.vType)?o.vType:"godan";
     if(cat==="adj") card.aType=o.aType==="na"?"na":"i";
     if(Array.isArray(o.examples)) card.examples=o.examples.filter(e=>e&&e.jp).map(e=>({jp:String(e.jp).trim(),ko:(e.ko||"").trim()}));
@@ -649,14 +703,14 @@ function importPaste(){
     deck.cards.push(card); added++;
   });
   saveDeck(); closePaste(); renderStats(); renderChips();
-  listFilter="all"; renderList(); switchView("list");
+  catFilter="all"; statusFilter="all"; renderChips(); renderList(); switchView("list");
   toast(added?`${added}개 추가${skipped?` · ${skipped}개 건너뜀`:""}`:"추가된 단어가 없어요 (이미 있거나 형식 오류)");
 }
 
 /* ===== samples ===== */
 function seedSamples(){
   const t=now(); let i=0;
-  const add=o=>deck.cards.push({id:uid(),ease:2.5,reps:0,interval:0,due:t,createdAt:t+(i++),...o});
+  const add=o=>deck.cards.push({id:uid(),status:"new",ease:2.5,reps:0,interval:0,due:t,createdAt:t+(i++),...o});
   add({category:"verb",vType:"ichidan",jp:"食べる",reading:"たべる",meaning:"먹다",examples:[{jp:"ご飯を食べる",ko:"밥을 먹다"}],tag:"N5"});
   add({category:"verb",vType:"godan",jp:"飲む",reading:"のむ",meaning:"마시다",tag:"N5"});
   add({category:"verb",vType:"kuru",jp:"来る",reading:"くる",meaning:"오다",tag:"N5"});
@@ -670,7 +724,7 @@ function seedSamples(){
   add({category:"phrase",jp:"ておく",reading:"ておく",meaning:"(미리) ~해 두다 / ~해 놓다",level:"N4",tag:"문형",
     usages:[{connection:"동사 て형 + おく",meaning:"미리 대비해서 ~해 두다, ~한 상태로 두다",examples:[{jp:"ビールを買っておきます。",ko:"맥주를 사 둘게요."},{jp:"窓を開けておく。",ko:"창문을 열어 둔다."}]}],
     notes:"회화에서는 ～ておく→～とく, ～でおく→～どく로 줄여 말함 (買っとく)."});
-  deck.meta.seeded=true; saveDeck(); buildSession(); renderStudy(); renderStats(); renderChips();
+  deck.meta.seeded=true; saveDeck(); renderChips(); renderList(); renderStats();
   toast("샘플을 채웠어요");
 }
 
@@ -703,7 +757,7 @@ function importCSV(file){
       const r=rows[i]; const cat=KO_CAT[(r[0]||"").trim()]||"noun";
       const jp=(r[1]||"").trim(),reading=(r[2]||"").trim(),meaning=(r[3]||"").trim(),form=(r[4]||"").trim();
       if(!jp||!meaning) continue;
-      const o={id:uid(),category:cat,jp,reading,meaning,example:(r[5]||"").trim(),tag:(r[6]||"").trim(),ease:2.5,reps:0,interval:0,due:t,createdAt:t+added};
+      const o={id:uid(),category:cat,jp,reading,meaning,example:(r[5]||"").trim(),tag:(r[6]||"").trim(),status:"new",ease:2.5,reps:0,interval:0,due:t,createdAt:t+added};
       if(cat==="verb") o.vType={"1류":"godan","五段":"godan","2류":"ichidan","一段":"ichidan","する":"suru","来る":"kuru","くる":"kuru"}[form]||"godan";
       if(cat==="adj") o.aType=(form==="な"||form==="na")?"na":"i";
       deck.cards.push(o); added++;
@@ -715,16 +769,22 @@ function importCSV(file){
 
 /* ===== routing ===== */
 function switchView(name){
-  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
-  ["study","list","add"].forEach(v=>document.getElementById("view-"+v).classList.toggle("hidden",v!==name));
-  if(name==="study"){ buildSession(); renderStudy(); }
-  if(name==="list"){ renderList(); }
-  renderChips(); renderStats();
+  const navName=name==="card"?"list":name;
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===navName));
+  ["list","card","add"].forEach(v=>document.getElementById("view-"+v).classList.toggle("hidden",v!==name));
+  if(name==="list"){ renderChips(); renderList(); }
+  if(name==="card"){ renderViewer(); }
+  renderStats();
 }
 
 /* ===== init ===== */
 async function init(){
   const s=await loadDeck(); if(s&&Array.isArray(s.cards)){deck=s; if(!deck.meta)deck.meta={};}
+  // migrate: assign learning status from past study history (one time)
+  let migrated=false;
+  deck.cards.forEach(c=>{ if(!c.status){ c.status=(c.reps||0)>=2?"learned":((c.reps||0)>=1?"review":"new"); migrated=true; } });
+  if(migrated) saveDeck();
+
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
   document.querySelectorAll("#segCat button").forEach(b=>b.onclick=()=>setCat(b.dataset.v));
   ["f-jp","f-reading"].forEach(id=>document.getElementById(id).addEventListener("input",renderPreview));
@@ -742,9 +802,14 @@ async function init(){
   document.getElementById("installBtn").onclick=()=>document.getElementById("installOverlay").classList.remove("hidden");
   document.getElementById("installClose").onclick=()=>document.getElementById("installOverlay").classList.add("hidden");
   document.getElementById("installOverlay").onclick=e=>{ if(e.target.id==="installOverlay")e.currentTarget.classList.add("hidden"); };
+  // card viewer controls
+  document.getElementById("cardBack").onclick=()=>switchView("list");
+  document.getElementById("prevWord").onclick=()=>viewerGo(-1);
+  document.getElementById("nextWord").onclick=()=>viewerGo(1);
+  document.querySelectorAll("#statusPick button").forEach(b=>b.onclick=()=>setViewerStatus(b.dataset.s));
   if("speechSynthesis"in window){ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>{}; }
   setCat("verb");
-  buildSession(); renderStudy(); renderStats(); renderChips();
+  renderChips(); renderList(); renderStats();
 }
 init();
 </script>
